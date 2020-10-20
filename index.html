@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>捷信消费金融</title>
+    <style>
+      html,
+      body {
+        width: 100%;
+        height: 100%;
+      }
+
+      * {
+        margin: 0;
+      }
+
+      .wrapper {
+        box-sizing: border-box;
+        width: 100%;
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+      }
+      .wrapper div {
+        margin-top: -50px;
+        width: 100px;
+        height: 110px;
+        background-color: #000;
+        opacity: 0.6;
+        border-radius: 8px;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+      }
+
+      .wrapper img {
+        width: 40px;
+        height: 40px;
+      }
+
+      .wrapper span {
+        font-size: 15px;
+        color: #ffffff;
+        margin-top: 10px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="wrapper">
+      <div>
+        <img src="./loading.gif" alt="" />
+        <span>加载中</span>
+      </div>
+    </div>
+    <script src="https://cdn.staticfile.org/fingerprintjs2/2.1.0/fingerprint2.min.js"></script>
+    <script src="https://res.wx.qq.com/open/js/jweixin-1.3.2.js"></script>
+    <script>
+      function getQueryString(name) {
+        let reg = new RegExp("(^|&)" + name + "=([^&]*)(&|$)", "i");
+        let r = window.location.search.substr(1).match(reg);
+        if (r != null) {
+          return decodeURIComponent(r[2]);
+        }
+        return null;
+      }
+      let isIOS = navigator.userAgent.indexOf("iPhone") > -1;
+
+      var promise = new Promise(function (resolve) {
+        let excludes = {};
+        excludes.enumerateDevices = true;
+        excludes.userAgent = isIOS ? false : true;
+        excludes.audio = true;
+        excludes.fontsFlash = true;
+        excludes.fonts = true;
+        excludes.webgl = true;
+        excludes.canvas = true;
+        excludes.timezone = true;
+        excludes.timezoneOffset = true;
+
+        let options = { excludes };
+
+        Fingerprint2.get(options, function (components) {
+          // 参数
+
+          const values = components.map(function (component, index) {
+            if (index === 0) {
+              //把微信浏览器里UA的wifi或4G等网络替换成空,不然切换网络会ID不一样
+              return component.value.replace(/\bNetType\/\w+\b/, "");
+            }
+            return component.value;
+          });
+          // 生成最终id murmur
+          const deviceId = Fingerprint2.x64hash128(values.join(""), 31);
+
+          resolve(deviceId);
+        });
+      });
+
+      promise.then((deviceId) => {
+        if (getQueryString("debug")) {
+          wx.miniProgram.navigateTo({
+            url: `/debug/pages/device-id/device-id?deviceId=${deviceId}`,
+          });
+          return;
+        }
+
+        wx.miniProgram.switchTab({
+          url: "/pages/index/index",
+        });
+        wx.miniProgram.postMessage({
+          data: {
+            id: deviceId,
+          },
+        }); // 传的参数
+      });
+    </script>
+  </body>
+</html>
